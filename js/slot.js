@@ -32,15 +32,32 @@ const linePatterns = [
   [1,2,2,2,1], [3,2,2,2,3], [1,3,2,3,1]
 ];
 
+function svgEl(name,attrs={}){
+  const el=document.createElementNS('http://www.w3.org/2000/svg',name);
+  Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));
+  return el;
+}
+
 function drawPaylines(winningIndexes=[]){
   if(!paylinesEl)return;
   paylinesEl.innerHTML='';
   linePatterns.forEach((pattern,index)=>{
+    const active=index<lines;
+    const winning=winningIndexes.includes(index);
     const points=pattern.map((row,col)=>`${col*25+12.5},${(row-1)*50+25}`).join(' ');
-    const p=document.createElementNS('http://www.w3.org/2000/svg','polyline');
-    p.setAttribute('points',points);
-    p.setAttribute('class','payline'+(index<lines?' active':'')+(winningIndexes.includes(index)?' winning':'') );
+    const p=svgEl('polyline',{points,class:'payline'+(active?' active':'')+(winning?' winning':'')});
     paylinesEl.appendChild(p);
+
+    // Número da linha no começo e no fim, para ficar fácil saber qual linha está ativa/vencedora.
+    if(active||winning){
+      const startRow=pattern[0];
+      const endRow=pattern[4];
+      const start=svgEl('circle',{cx:'5',cy:String((startRow-1)*50+25),r:'4.2',fill:winning?'#fff':'#6d28d9',stroke:'#f5c451','stroke-width':'1.2'});
+      const end=svgEl('circle',{cx:'95',cy:String((endRow-1)*50+25),r:'4.2',fill:winning?'#fff':'#6d28d9',stroke:'#f5c451','stroke-width':'1.2'});
+      const t1=svgEl('text',{x:'5',y:String((startRow-1)*50+25),class:'payline-label'});t1.textContent=String(index+1);
+      const t2=svgEl('text',{x:'95',y:String((endRow-1)*50+25),class:'payline-label'});t2.textContent=String(index+1);
+      paylinesEl.append(start,end,t1,t2);
+    }
   });
 }
 
@@ -59,7 +76,7 @@ for(let i=1;i<=12;i++){
     updatePrize();
     drawPaylines();
     resultEl.className='result';
-    resultEl.textContent=`${lines} ${lines===1?'linha':'linhas'} de pagamento ativa${lines===1?'':'s'}.`;
+    resultEl.textContent=`${lines} ${lines===1?'linha':'linhas'} de pagamento ativa${lines===1?'':'s'} — as linhas douradas sobre os quadros são as que podem premiar.`;
   });
   lineButtons.appendChild(b);
 }
@@ -96,7 +113,7 @@ function lineIndexesFor(values){
 function evaluate(values){
   const wins=lineIndexesFor(values);
   if(!wins.length)return {prize:0,winName:'',wins:[]};
-  const pattern= linePatterns[wins[0]];
+  const pattern=linePatterns[wins[0]];
   const first=values[pattern[0]-1];
   return {prize:Math.max(5,Math.round(first.value/lines)),winName:`Linha ${wins[0]+1} — 5 ${first.name}s`,wins};
 }
@@ -111,7 +128,6 @@ async function spin(){
   document.querySelectorAll('.reel').forEach(r=>r.classList.remove('win'));
   document.querySelectorAll('.reel').forEach(r=>r.classList.add('spinning'));
 
-  // Giro mais longo: 2,5 segundos.
   const start=Date.now();
   while(Date.now()-start<2500){
     render(Array.from({length:15},randSymbol));
