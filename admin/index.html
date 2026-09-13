@@ -1,2 +1,23 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin — BL</title><link rel="stylesheet" href="../css/style.css"></head><body><header class="topbar"><a class="brand" href="../">BL ADMIN</a></header><main class="section"><span class="eyebrow">Gerenciamento</span><h1>Painel administrativo</h1><div class="info-grid"><article><strong>BOLÕES</strong><h3>Gerenciar concursos</h3><p>Criar, ativar, encerrar e acompanhar bolões.</p></article><article><strong>VENDAS</strong><h3>Pedidos</h3><p>Acompanhar pagamentos e jogos registrados.</p></article><article><strong>CLIENTES</strong><h3>Compradores</h3><p>Consultar clientes e suas participações.</p></article></div><div class="card" style="margin-top:16px"><p>Área reservada. A autenticação administrativa e as permissões serão implementadas antes de liberar este painel.</p></div></main></body></html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Painel do dono — BL</title><link rel="stylesheet" href="../css/style.css"></head>
+<body>
+<header class="topbar"><a class="brand" href="../">BL DONO</a><div class="session-area"><button class="btn btn-outline" id="logoutBtn">Sair</button></div></header>
+<main class="section">
+  <div class="section-heading"><div><span class="eyebrow">Gerenciamento</span><h1>Painel do dono</h1></div></div>
+  <div id="adminMessage" class="message"></div>
+  <section class="admin-stats" id="stats"></section>
+
+  <section class="section-block">
+    <div class="section-heading"><div><span class="eyebrow">Acompanhamento</span><h2>Todos os jogos</h2></div></div>
+    <div class="admin-tools"><input id="searchGames" placeholder="Pesquisar cliente, telefone ou dezenas..."><select id="statusFilter"><option value="">Todos os status</option><option value="pago">Pago</option><option value="pendente">Pendente</option></select></div>
+    <div id="gamesList" class="admin-table-wrap"><div class="empty">Carregando jogos...</div></div>
+  </section>
+
+  <section class="section-block">
+    <div class="section-heading"><div><span class="eyebrow">Clientes</span><h2>Clientes cadastrados</h2></div></div>
+    <div id="clientsList" class="admin-table-wrap"><div class="empty">Carregando clientes...</div></div>
+  </section>
+</main>
+<script type="module" src="../js/admin.js"></script>
+</body></html>
