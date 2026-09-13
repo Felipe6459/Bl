@@ -6,17 +6,15 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const form = document.getElementById('adminLoginForm');
 const message = document.getElementById('message');
 
-const onlyDigits = value => value.replace(/\D/g, '');
-
 form.addEventListener('submit', async event => {
   event.preventDefault();
-  const phone = onlyDigits(document.getElementById('phone').value);
+  const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
   message.textContent = 'Verificando acesso...';
 
   try {
-    if (phone.length < 10) throw new Error('Informe um telefone válido.');
-    const { error } = await supabase.auth.signInWithPassword({ phone: `+55${phone}`, password });
+    if (!email) throw new Error('Informe seu e-mail.');
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
 
     const { data: { user } } = await supabase.auth.getUser();
