@@ -5,26 +5,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>BL — Entrar</title>
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    .login-page{min-height:100vh;position:relative;overflow:hidden;background:radial-gradient(circle at 50% 20%,#25203d 0,#11111a 42%,#08080c 100%)}
+    .login-page .topbar{position:relative;background:rgba(8,8,12,.55);border-bottom:1px solid rgba(255,255,255,.08)}
+    .login-stage{position:relative;min-height:calc(100vh - 61px);display:flex;align-items:center;justify-content:center;padding:38px 18px 55px}
+    .login-balls{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+    .lottery-ball{position:absolute;width:68px;height:68px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.15rem;color:#fff;border:3px solid rgba(255,255,255,.55);box-shadow:inset -9px -10px 18px rgba(0,0,0,.28),inset 7px 7px 13px rgba(255,255,255,.25),0 12px 30px rgba(0,0,0,.35);animation:floatBall 7s ease-in-out infinite}
+    .lottery-ball::after{content:"";position:absolute;inset:9px;border-radius:50%;border:1px solid rgba(255,255,255,.22)}
+    .ball-1{left:6%;top:12%;background:#e91e3a;animation-delay:-1s}.ball-2{right:8%;top:18%;background:#1688e8;animation-delay:-3s}.ball-3{left:13%;bottom:18%;background:#19a85a;animation-delay:-5s}.ball-4{right:13%;bottom:12%;background:#f2a900;animation-delay:-2s}.ball-5{left:27%;top:7%;width:46px;height:46px;font-size:.85rem;background:#7b35d9;animation-delay:-4s}.ball-6{right:27%;bottom:7%;width:50px;height:50px;font-size:.9rem;background:#e34b16;animation-delay:-6s}.ball-7{left:3%;top:52%;width:42px;height:42px;font-size:.78rem;background:#0e9f91;animation-delay:-2.5s}.ball-8{right:3%;top:57%;width:44px;height:44px;font-size:.8rem;background:#d52d72;animation-delay:-4.5s}
+    @keyframes floatBall{0%,100%{transform:translate3d(0,0,0) rotate(0deg)}50%{transform:translate3d(0,-18px,0) rotate(7deg)}}
+    .login-content{position:relative;z-index:2;width:min(100%,470px)}
+    .login-hero{text-align:center;padding:0 10px 22px}.login-hero .eyebrow{color:#c8b8ff}.login-hero h1{font-size:clamp(2rem,8vw,3rem);margin:10px 0 10px}.login-hero p{margin:0 auto;color:#b9b7c5}
+    .login-card{padding:26px!important;background:rgba(18,19,26,.88);border:1px solid rgba(255,255,255,.12)!important;box-shadow:0 25px 70px rgba(0,0,0,.48);backdrop-filter:blur(15px)}
+    .login-card .btn{width:100%;margin-top:8px;background:#fff}.login-card a{color:#d1c4ff}
+    @media(max-width:600px){.lottery-ball{width:52px;height:52px;font-size:.9rem}.ball-5,.ball-6{width:40px;height:40px;font-size:.72rem}.ball-7,.ball-8{display:none}.ball-1{left:-8%;top:15%}.ball-2{right:-7%;top:20%}.ball-3{left:-5%;bottom:14%}.ball-4{right:-5%;bottom:12%}.login-stage{padding-top:25px}}
+  </style>
 </head>
-<body>
+<body class="login-page">
   <header class="topbar"><a class="brand" href="index.html">BL</a></header>
-  <main>
-    <section class="hero">
-      <span class="eyebrow">Acesso</span>
-      <h1>Entrar na sua conta</h1>
-      <p>Acesse seus jogos e suas compras.</p>
-    </section>
-    <section class="section" style="max-width:520px;margin:auto">
-      <div class="card" style="padding:24px">
-        <form id="loginForm" novalidate>
-          <label>E-mail<br><input id="loginEmail" type="email" autocomplete="email" required></label><br>
-          <label>Senha<br><input id="loginPassword" type="password" autocomplete="current-password" required></label><br>
-          <button id="loginSubmit" class="btn" type="submit">Entrar</button>
-          <p id="loginMessage" role="alert" aria-live="polite"></p>
-          <p>Não tem uma conta? <a href="cadastro.html">Criar conta</a></p>
-        </form>
-      </div>
-    </section>
+  <main class="login-stage">
+    <div class="login-balls" aria-hidden="true">
+      <span class="lottery-ball ball-1">07</span><span class="lottery-ball ball-2">25</span>
+      <span class="lottery-ball ball-3">14</span><span class="lottery-ball ball-4">38</span>
+      <span class="lottery-ball ball-5">03</span><span class="lottery-ball ball-6">51</span>
+      <span class="lottery-ball ball-7">42</span><span class="lottery-ball ball-8">60</span>
+    </div>
+    <div class="login-content">
+      <section class="login-hero">
+        <span class="eyebrow">Acesso</span>
+        <h1>Entrar na sua conta</h1>
+        <p>Acesse seus jogos e suas compras.</p>
+      </section>
+      <section>
+        <div class="card login-card">
+          <form id="loginForm" novalidate>
+            <label>E-mail<br><input id="loginEmail" type="email" autocomplete="email" required></label><br>
+            <label>Senha<br><input id="loginPassword" type="password" autocomplete="current-password" required></label><br>
+            <button id="loginSubmit" class="btn" type="submit">Entrar</button>
+            <p id="loginMessage" class="message" role="alert" aria-live="polite"></p>
+            <p>Não tem uma conta? <a href="cadastro.html">Criar conta</a></p>
+          </form>
+        </div>
+      </section>
+    </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -32,35 +55,23 @@
     const SUPABASE_URL = 'https://ujddnzckfrksetsfgden.supabase.co';
     const SUPABASE_KEY = 'sb_' + 'publishable_' + 'Lo9uaX-E9hHcL-w2El6M3g_OoCRma3W';
     const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
     const form = document.getElementById('loginForm');
     const message = document.getElementById('loginMessage');
     const submit = document.getElementById('loginSubmit');
-
     form.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      message.textContent = 'Entrando...';
-      submit.disabled = true;
-
+      event.preventDefault(); message.textContent = 'Entrando...'; submit.disabled = true;
       try {
         const email = document.getElementById('loginEmail').value.trim().toLowerCase();
         const password = document.getElementById('loginPassword').value;
-
         if (!email) throw new Error('Informe seu e-mail.');
         if (!password) throw new Error('Informe sua senha.');
-
         const { data, error } = await client.auth.signInWithPassword({ email, password });
         if (error) throw error;
         if (!data?.session) throw new Error('Não foi possível iniciar a sessão.');
-
         message.textContent = 'Login realizado! Entrando na sua conta...';
         window.location.href = 'minha-conta.html';
-      } catch (error) {
-        console.error('BL Login:', error);
-        message.textContent = error?.message || 'Não foi possível entrar. Verifique seu e-mail e senha.';
-      } finally {
-        submit.disabled = false;
-      }
+      } catch (error) { console.error('BL Login:', error); message.textContent = error?.message || 'Não foi possível entrar. Verifique seu e-mail e senha.'; }
+      finally { submit.disabled = false; }
     });
   </script>
 </body>
