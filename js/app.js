@@ -58,37 +58,41 @@ function bindEvents() {
     submit.disabled = true;
     try {
       const client = getSupabase();
-      const phoneValue = onlyDigits(document.getElementById('phone').value);
       const password = document.getElementById('password').value;
-      if (phoneValue.length !== 11) throw new Error('Informe um telefone com 11 dígitos.');
       if (password.length < 6) throw new Error('A senha deve ter pelo menos 6 caracteres.');
 
       if (registerMode) {
         const fullName = document.getElementById('fullName').value.trim();
         const cpfValue = onlyDigits(document.getElementById('cpf').value);
+        const phoneValue = onlyDigits(document.getElementById('phone').value);
+        const emailValue = document.getElementById('email').value.trim().toLowerCase();
         if (!fullName) throw new Error('Informe seu nome completo.');
         if (cpfValue.length !== 11) throw new Error('Informe um CPF válido.');
+        if (phoneValue.length !== 11) throw new Error('Informe um telefone com 11 dígitos.');
+        if (!emailValue || !emailValue.includes('@')) throw new Error('Informe um e-mail válido.');
         const { data, error } = await client.auth.signUp({
-          phone: `+55${phoneValue}`,
+          email: emailValue,
           password,
           options: { data: { full_name: fullName, cpf: cpfValue, phone: phoneValue } }
         });
         if (error) throw error;
         if (!data.session) {
-          message.textContent = 'Cadastro criado. Confirme o SMS recebido para entrar.';
+          message.textContent = 'Cadastro criado. Verifique seu e-mail para confirmar a conta.';
         } else {
           message.textContent = 'Conta criada com sucesso!';
-          setTimeout(() => { document.getElementById('authDialog').close(); updateSessionUI(); }, 500);
+          setTimeout(() => { if (document.getElementById('authDialog')) document.getElementById('authDialog').close(); updateSessionUI(); }, 500);
         }
       } else {
-        const { error } = await client.auth.signInWithPassword({ phone: `+55${phoneValue}`, password });
+        const emailValue = document.getElementById('email').value.trim().toLowerCase();
+        if (!emailValue) throw new Error('Informe seu e-mail.');
+        const { error } = await client.auth.signInWithPassword({ email: emailValue, password });
         if (error) throw error;
-        document.getElementById('authDialog').close();
+        if (document.getElementById('authDialog')) document.getElementById('authDialog').close();
         await updateSessionUI();
       }
     } catch (error) {
       console.error(error);
-      message.textContent = error?.message || 'Não foi possível concluir o cadastro.';
+      message.textContent = error?.message || 'Não foi possível concluir a operação.';
     } finally {
       submit.disabled = false;
     }
