@@ -41,19 +41,19 @@ function svgEl(name,attrs={}){
 function drawPaylines(winningIndexes=[]){
   if(!paylinesEl)return;
   paylinesEl.innerHTML='';
+  paylinesEl.classList.remove('hidden');
   linePatterns.forEach((pattern,index)=>{
     const active=index<lines;
     const winning=winningIndexes.includes(index);
+    if(!active&&!winning)return;
     const points=pattern.map((row,col)=>`${col*25+12.5},${(row-1)*50+25}`).join(' ');
     const p=svgEl('polyline',{points,class:'payline'+(active?' active':'')+(winning?' winning':'')});
     paylinesEl.appendChild(p);
-
-    // Número da linha no começo e no fim, para ficar fácil saber qual linha está ativa/vencedora.
     if(active||winning){
       const startRow=pattern[0];
       const endRow=pattern[4];
-      const start=svgEl('circle',{cx:'5',cy:String((startRow-1)*50+25),r:'4.2',fill:winning?'#fff':'#6d28d9',stroke:'#f5c451','stroke-width':'1.2'});
-      const end=svgEl('circle',{cx:'95',cy:String((endRow-1)*50+25),r:'4.2',fill:winning?'#fff':'#6d28d9',stroke:'#f5c451','stroke-width':'1.2'});
+      const start=svgEl('circle',{cx:'5',cy:String((startRow-1)*50+25),r:'3.2',fill:winning?'#fff':'#6d28d9',stroke:'#f5c451','stroke-width':'0.8'});
+      const end=svgEl('circle',{cx:'95',cy:String((endRow-1)*50+25),r:'3.2',fill:winning?'#fff':'#6d28d9',stroke:'#f5c451','stroke-width':'0.8'});
       const t1=svgEl('text',{x:'5',y:String((startRow-1)*50+25),class:'payline-label'});t1.textContent=String(index+1);
       const t2=svgEl('text',{x:'95',y:String((endRow-1)*50+25),class:'payline-label'});t2.textContent=String(index+1);
       paylinesEl.append(start,end,t1,t2);
@@ -76,7 +76,7 @@ for(let i=1;i<=12;i++){
     updatePrize();
     drawPaylines();
     resultEl.className='result';
-    resultEl.textContent=`${lines} ${lines===1?'linha':'linhas'} de pagamento ativa${lines===1?'':'s'} — as linhas douradas sobre os quadros são as que podem premiar.`;
+    resultEl.textContent=`${lines} ${lines===1?'linha':'linhas'} de pagamento ativa${lines===1?'':'s'} — as linhas douradas mostram onde pode sair prêmio.`;
   });
   lineButtons.appendChild(b);
 }
@@ -124,7 +124,7 @@ async function spin(){
   spinBtn.disabled=true;
   resultEl.className='result';
   resultEl.textContent='Os 15 quadros estão girando...';
-  drawPaylines();
+  paylinesEl.classList.add('hidden');
   document.querySelectorAll('.reel').forEach(r=>r.classList.remove('win'));
   document.querySelectorAll('.reel').forEach(r=>r.classList.add('spinning'));
 
@@ -150,7 +150,7 @@ async function spin(){
     resultEl.className='result win-text';
     resultEl.textContent='✨ '+outcome.winName+' — '+outcome.prize.toLocaleString('pt-BR')+' pontos!';
   }else{
-    drawPaylines();
+    paylinesEl.classList.add('hidden');
     resultEl.textContent='Não houve combinação vencedora. Tente novamente.';
   }
   spinBtn.disabled=false;
