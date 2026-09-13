@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Minha conta — BL</title><link rel="stylesheet" href="css/style.css"></head>
+<body>
+<header class="topbar"><a class="brand" href="./">BL</a><button class="btn btn-outline" id="logout">Sair</button></header>
+<main class="section"><span class="eyebrow">Área do cliente</span><h1>Meus jogos</h1><div id="profile" class="card">Carregando...</div><div id="games" class="cards" style="margin-top:16px"></div></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
+const sb=window.supabase.createClient('https://ujddnzckfrksetsfgden.supabase.co','sb_publishable_Lo9uaX-E9hHcL-w2El6M3g_OoCRma3W');
+const esc=v=>String(v).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
+(async()=>{const {data:{user}}=await sb.auth.getUser();if(!user){location.href='./';return;}const {data:p}=await sb.from('profiles').select('full_name,cpf,phone').eq('id',user.id).single();document.getElementById('profile').innerHTML=`<strong>${esc(p?.full_name||'Cliente')}</strong><p>Telefone: ${esc(p?.phone||'')}<br>CPF: ${esc(p?.cpf||'')}</p>`;const {data:g}=await sb.from('jogos').select('id,numero,dezenas,created_at,status:pedido_id,bolao_id').eq('comprador_id',user.id).order('created_at',{ascending:false});const box=document.getElementById('games');if(!g?.length){box.innerHTML='<div class="empty">Você ainda não possui jogos confirmados.</div>';return;}box.innerHTML=g.map(j=>`<article class="card"><h3>Jogo #${j.numero}</h3><p>${j.dezenas.map(n=>String(n).padStart(2,'0')).join(' · ')}</p><small>Registrado em ${new Date(j.created_at).toLocaleString('pt-BR')}</small></article>`).join('');})();
+document.getElementById('logout').onclick=async()=>{await sb.auth.signOut();location.href='./';};
+</script></body></html>
