@@ -1,15 +1,52 @@
 <!doctype html>
 <html lang="pt-BR">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>BL — Criar conta</title><link rel="stylesheet" href="css/style.css"></head>
-<body><header class="topbar"><a class="brand" href="index.html">BL</a></header>
-<main><section class="hero"><span class="eyebrow">Cadastro</span><h1>Crie sua conta</h1><p>Cadastre-se para montar e acompanhar seus jogos.</p></section>
-<section class="section" style="max-width:520px;margin:auto"><div class="card" style="padding:24px"><form id="authForm">
-<label>Nome completo<br><input id="fullName" type="text" autocomplete="name" required></label><br>
-<label>E-mail<br><input id="email" type="email" autocomplete="email" required></label><br>
-<label>CPF<br><input id="cpf" type="text" inputmode="numeric" maxlength="14" required></label><br>
-<label>Telefone / WhatsApp<br><input id="phone" type="tel" inputmode="tel" maxlength="15" autocomplete="tel" required></label><br>
-<label>Senha<br><input id="password" type="password" autocomplete="new-password" minlength="6" required></label><br>
-<button id="authSubmit" class="btn" type="submit">Criar minha conta</button><p id="authMessage"></p><p>Já tem uma conta? <a href="login.html">Entrar</a></p>
-</form></div></section></main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/app.js"></script><script>window.addEventListener('load', function(){if(typeof registerMode!=='undefined')registerMode=true;});</script>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BL — Criar conta</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="topbar"><a class="brand" href="index.html">BL</a></header>
+<main>
+<section class="hero"><span class="eyebrow">Cadastro</span><h1>Crie sua conta</h1><p>Cadastre-se para montar e acompanhar seus jogos.</p></section>
+<section class="section" style="max-width:520px;margin:auto"><div class="card" style="padding:24px">
+<form id="cadastroForm" novalidate>
+<label>Nome completo<br><input id="fullName" type="text"></label><br>
+<label>E-mail<br><input id="email" type="email"></label><br>
+<label>CPF<br><input id="cpf" type="text" inputmode="numeric" maxlength="14"></label><br>
+<label>Telefone / WhatsApp<br><input id="phone" type="tel" inputmode="tel" maxlength="15"></label><br>
+<label>Senha<br><input id="password" type="password"></label><br>
+<button id="cadastroSubmit" class="btn" type="submit">Criar minha conta</button>
+<p id="cadastroMessage" style="margin-top:14px;min-height:24px"></p>
+<p>Já tem uma conta? <a href="login.html?v=5">Entrar</a></p>
+</form></div></section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+const URL='https://ujddnzckfrksetsfgden.supabase.co';
+const KEY='sb_'+'publishable_'+'Lo9uaX-E9hHcL-w2El6M3g_OoCRma3W';
+const form=document.getElementById('cadastroForm'), msg=document.getElementById('cadastroMessage'), btn=document.getElementById('cadastroSubmit');
+const digits=v=>String(v||'').replace(/\\D/g,'');
+const show=t=>{msg.textContent=t;};
+form.addEventListener('submit',async function(e){
+ e.preventDefault(); e.stopPropagation(); show('Processando cadastro...'); btn.disabled=true;
+ try{
+  if(!window.supabase||typeof window.supabase.createClient!=='function') throw new Error('O sistema de cadastro não carregou. Recarregue a página.');
+  const name=document.getElementById('fullName').value.trim(), email=document.getElementById('email').value.trim().toLowerCase(), cpf=digits(document.getElementById('cpf').value), phone=digits(document.getElementById('phone').value), password=document.getElementById('password').value;
+  if(!name) throw new Error('Informe seu nome completo.');
+  if(!email||!email.includes('@')) throw new Error('Informe um e-mail válido.');
+  if(cpf.length!==11) throw new Error('Informe um CPF com 11 dígitos.');
+  if(phone.length!==11) throw new Error('Informe um telefone com 11 dígitos.');
+  if(password.length<6) throw new Error('A senha deve ter pelo menos 6 caracteres.');
+  const client=window.supabase.createClient(URL,KEY);
+  const r=await client.auth.signUp({email,password,options:{data:{full_name:name,cpf,phone},emailRedirectTo:window.location.origin+'/Bl/login.html?v=5'}});
+  if(r.error) throw new Error(r.error.message||('Erro de cadastro HTTP '+(r.error.status||'?')));
+  show(r.data&&r.data.session?'Conta criada com sucesso!':'Cadastro criado com sucesso. Verifique seu e-mail para confirmar a conta.');
+ }catch(err){console.error('BL cadastro:',err);show('ERRO: '+(err&&err.message?err.message:String(err)));}
+ finally{btn.disabled=false;}
+});
+})();
+</script>
 </body></html>
