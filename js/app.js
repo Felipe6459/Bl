@@ -50,19 +50,25 @@ form.addEventListener('submit', async event => {
     const phone = onlyDigits(document.getElementById('phone').value);
     const password = document.getElementById('password').value;
     if (phone.length < 10) throw new Error('Informe um telefone válido.');
+    if (password.length < 6) throw new Error('A senha deve ter pelo menos 6 caracteres.');
 
     if (registerMode) {
       const fullName = document.getElementById('fullName').value.trim();
       const cpf = onlyDigits(document.getElementById('cpf').value);
       if (!fullName) throw new Error('Informe seu nome completo.');
       if (cpf.length !== 11) throw new Error('Informe um CPF válido.');
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         phone: `+55${phone}`,
         password,
-        options: { data: { full_name: fullName, cpf } }
+        options: { data: { full_name: fullName, cpf, phone } }
       });
       if (error) throw error;
-      message.textContent = 'Cadastro criado. Se a confirmação por SMS estiver ativada, confirme seu telefone antes de entrar.';
+      if (!data.session) {
+        message.textContent = 'Cadastro criado. Confirme seu telefone por SMS para entrar.';
+      } else {
+        message.textContent = 'Conta criada com sucesso! Entrando...';
+        setTimeout(() => { dialog.close(); updateSessionUI(); }, 600);
+      }
     } else {
       const { error } = await supabase.auth.signInWithPassword({ phone: `+55${phone}`, password });
       if (error) throw error;
@@ -70,6 +76,7 @@ form.addEventListener('submit', async event => {
       await updateSessionUI();
     }
   } catch (error) {
+    console.error('Erro de autenticação:', error);
     message.textContent = error?.message || 'Não foi possível concluir a operação.';
   } finally {
     submit.disabled = false;
@@ -98,15 +105,9 @@ async function loadBoloes() {
   list.innerHTML = data.map(b => `<article class="card"><h3>${escapeHtml(b.nome)}</h3><p>${escapeHtml(b.descricao || 'Escolha suas 10 dezenas para participar.')}</p><p><strong>Concurso:</strong> ${b.concurso}<br><strong>Sorteio:</strong> ${new Date(`${b.data_sorteio}T00:00:00`).toLocaleDateString('pt-BR')}<br><strong>Jogo:</strong> R$ ${Number(b.valor_jogo).toFixed(2).replace('.',',')}</p><button class="btn" onclick="startGame('${b.id}')">Escolher dezenas</button></article>`).join('');
 }
 
-function startGame(id) {
-  window.location.href = `jogar.html?bolao=${encodeURIComponent(id)}`;
-}
+function startGame(id) { window.location.href = `jogar.html?bolao=${encodeURIComponent(id)}`; }
 window.startGame = startGame;
-
-function escapeHtml(value) {
-  return String(value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-}
-
+function escapeHtml(value) { return String(value).replace(/[&<>'\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
 supabase.auth.onAuthStateChange(() => updateSessionUI());
 updateSessionUI();
 loadBoloes();
