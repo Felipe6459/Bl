@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BL — Sorteio dos Animais</title>
+<link rel="stylesheet" href="../css/style.css">
+<style>
+.animal-page{max-width:900px;margin:auto;padding:28px 16px 60px}.animal-hero{background:linear-gradient(145deg,rgba(123,44,255,.24),rgba(20,20,35,.9));border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:24px;margin-bottom:20px}.animal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.animal-card{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);border-radius:18px;padding:14px;text-align:center;cursor:pointer;transition:.2s}.animal-card:hover{transform:translateY(-2px)}.animal-card.selected{border-color:#7b2cff;background:rgba(123,44,255,.24);box-shadow:0 0 0 2px rgba(123,44,255,.2)}.animal-number{font-size:12px;opacity:.65}.animal-emoji{font-size:34px;display:block;margin:4px}.animal-name{font-weight:700}.selected-list{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}.selected-pill{padding:8px 12px;border-radius:999px;background:#7b2cff;color:white;font-size:13px}
+@media(min-width:650px){.animal-grid{grid-template-columns:repeat(5,1fr)}}
+</style>
+</head>
+<body>
+<header class="topbar"><a class="brand" href="../">BL</a><div class="session-area"><a class="btn btn-outline" href="../minha-conta.html">Minha conta</a></div></header>
+<main class="animal-page">
+<section class="animal-hero"><span class="eyebrow">Nova modalidade</span><h1>🐾 Sorteio dos Animais</h1><p>Escolha um ou mais animais para participar deste sorteio promocional. Esta modalidade é independente do jogo de dezenas.</p></section>
+<div id="drawInfo" class="section-block"><div class="empty">Carregando sorteio...</div></div>
+<section class="section-block"><h2>Escolha seus animais</h2><p>Toque nos animais que deseja selecionar.</p><div id="animalGrid" class="animal-grid"></div><div id="selectedList" class="selected-list"></div><button id="participateBtn" class="btn btn-primary" disabled>Participar</button><p id="message" class="message"></p></section>
+<section class="section-block"><h2>Minhas participações</h2><div id="history"><div class="empty">Carregando...</div></div></section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/animal.js?v=2"></script>
+</body></html>
