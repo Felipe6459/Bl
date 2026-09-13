@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Asaas — Painel Master</title><link rel="stylesheet" href="../css/style.css"></head>
+<body>
+<header class="topbar"><a class="brand" href="./">BL MASTER</a><div class="session-area"><a class="btn btn-outline" href="./">Voltar</a></div></header>
+<main class="section">
+  <div class="section-heading"><div><span class="eyebrow">Integração</span><h1>Asaas</h1></div></div>
+  <div id="message" class="message"></div>
+
+  <section class="section-block">
+    <div class="section-heading"><div><span class="eyebrow">Pagamento</span><h2>Configuração do Asaas</h2></div></div>
+    <p>Cadastre aqui a API Key que será usada pelo BL para gerar os pagamentos PIX. A chave não será colocada no código do site.</p>
+    <form id="asaasForm" class="form-grid">
+      <label>Ambiente
+        <select id="environment" required>
+          <option value="sandbox">Sandbox — testes</option>
+          <option value="production">Produção — pagamentos reais</option>
+        </select>
+      </label>
+      <label>API Key do Asaas
+        <input id="apiKey" type="password" autocomplete="new-password" placeholder="Cole a API Key aqui" required>
+      </label>
+      <div class="full"><button class="btn btn-primary" type="submit">Salvar integração</button></div>
+    </form>
+  </section>
+
+  <section class="section-block">
+    <div class="section-heading"><div><span class="eyebrow">Status</span><h2>Integração cadastrada</h2></div></div>
+    <div id="status" class="card">Verificando...</div>
+  </section>
+</main>
+<script type="module" src="../js/admin-asaas.js"></script>
+</body></html>
