@@ -25,9 +25,16 @@
   </section>
 
   <section class="section-block">
+    <div class="section-heading"><div><span class="eyebrow">Webhook</span><h2>Confirmação automática de pagamento</h2></div></div>
+    <p>O webhook recebe a confirmação do Asaas e marca automaticamente o pedido como pago. A configuração é feita com segurança no servidor.</p>
+    <button id="configureWebhook" class="btn btn-primary" type="button">⚡ Configurar webhook</button>
+    <div id="webhookStatus" class="card" style="margin-top:12px">Verificando...</div>
+  </section>
+
+  <section class="section-block">
     <div class="section-heading"><div><span class="eyebrow">Status</span><h2>Integração cadastrada</h2></div></div>
     <div id="status" class="card">Verificando...</div>
   </section>
 </main>
-<script type="module" src="../js/admin-asaas.js"></script>
+<script type="module" src="../js/admin-asaas.js?v=2"></script>
 </body></html>
