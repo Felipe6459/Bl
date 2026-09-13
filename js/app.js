@@ -1,42 +1,38 @@
 const SUPABASE_URL = 'https://ujddnzckfrksetsfgden.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Lo9uaX-E9hHcL-w2El6M3g_OoCRma3W';
-
 let supabase = null;
 let registerMode = false;
 
 function getSupabase() {
   if (supabase) return supabase;
-  if (!window.supabase || typeof window.supabase.createClient !== 'function') {
-    throw new Error('Não foi possível carregar o sistema de cadastro. Atualize a página.');
-  }
+  if (!window.supabase || typeof window.supabase.createClient !== 'function') throw new Error('Não foi possível carregar o sistema. Atualize a página.');
   supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   return supabase;
 }
-
 function onlyDigits(value) { return String(value || '').replace(/\D/g, ''); }
-function formatCpf(value) {
-  const v = onlyDigits(value).slice(0, 11);
-  return v.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-}
-function formatPhone(value) {
-  const v = onlyDigits(value).slice(0, 11);
-  if (v.length <= 2) return v;
-  if (v.length <= 7) return `(${v.slice(0, 2)}) ${v.slice(2)}`;
-  return `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`;
-}
+function formatCpf(value) { const v = onlyDigits(value).slice(0, 11); return v.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2'); }
+function formatPhone(value) { const v = onlyDigits(value).slice(0, 11); if (v.length <= 2) return v; if (v.length <= 7) return `(${v.slice(0,2)}) ${v.slice(2)}`; return `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`; }
+function getEmailInput() { return document.getElementById('email') || document.getElementById('loginEmail'); }
 
 function openAuth(register) {
   const dialog = document.getElementById('authDialog');
   if (!dialog) return;
   registerMode = !!register;
-  document.getElementById('authTitle').textContent = registerMode ? 'Criar conta' : 'Entrar';
-  document.getElementById('authSubmit').textContent = registerMode ? 'Criar minha conta' : 'Entrar';
-  document.getElementById('switchAuth').textContent = registerMode ? 'Já tenho uma conta' : 'Ainda não tenho conta';
-  document.getElementById('registerFields').hidden = !registerMode;
+  const title = document.getElementById('authTitle');
+  const submit = document.getElementById('authSubmit');
+  const fields = document.getElementById('registerFields');
+  const switchBtn = document.getElementById('switchAuth');
+  if (title) title.textContent = registerMode ? 'Criar conta' : 'Entrar';
+  if (submit) submit.textContent = registerMode ? 'Criar minha conta' : 'Entrar';
+  if (switchBtn) switchBtn.textContent = registerMode ? 'Já tenho uma conta' : 'Ainda não tenho conta';
+  if (fields) fields.hidden = !registerMode;
+  const loginEmail = document.getElementById('loginEmail');
+  if (loginEmail) loginEmail.hidden = registerMode;
+  const loginLabel = loginEmail?.closest('label');
+  if (loginLabel) loginLabel.hidden = registerMode;
   document.getElementById('authMessage').textContent = '';
   document.getElementById('authForm').reset();
-  if (typeof dialog.showModal === 'function') dialog.showModal();
-  else dialog.setAttribute('open', '');
+  if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', '');
 }
 
 function bindEvents() {
@@ -48,7 +44,6 @@ function bindEvents() {
   document.getElementById('heroRegister')?.addEventListener('click', () => openAuth(true));
   document.getElementById('closeAuth')?.addEventListener('click', () => document.getElementById('authDialog')?.close());
   document.getElementById('switchAuth')?.addEventListener('click', () => openAuth(!registerMode));
-
   const form = document.getElementById('authForm');
   form?.addEventListener('submit', async event => {
     event.preventDefault();
@@ -60,7 +55,6 @@ function bindEvents() {
       const client = getSupabase();
       const password = document.getElementById('password').value;
       if (password.length < 6) throw new Error('A senha deve ter pelo menos 6 caracteres.');
-
       if (registerMode) {
         const fullName = document.getElementById('fullName').value.trim();
         const cpfValue = onlyDigits(document.getElementById('cpf').value);
@@ -70,32 +64,23 @@ function bindEvents() {
         if (cpfValue.length !== 11) throw new Error('Informe um CPF válido.');
         if (phoneValue.length !== 11) throw new Error('Informe um telefone com 11 dígitos.');
         if (!emailValue || !emailValue.includes('@')) throw new Error('Informe um e-mail válido.');
-        const { data, error } = await client.auth.signUp({
-          email: emailValue,
-          password,
-          options: { data: { full_name: fullName, cpf: cpfValue, phone: phoneValue } }
-        });
+        const { data, error } = await client.auth.signUp({ email: emailValue, password, options: { data: { full_name: fullName, cpf: cpfValue, phone: phoneValue } } });
         if (error) throw error;
-        if (!data.session) {
-          message.textContent = 'Cadastro criado. Verifique seu e-mail para confirmar a conta.';
-        } else {
-          message.textContent = 'Conta criada com sucesso!';
-          setTimeout(() => { if (document.getElementById('authDialog')) document.getElementById('authDialog').close(); updateSessionUI(); }, 500);
-        }
+        message.textContent = data.session ? 'Conta criada com sucesso!' : 'Cadastro criado. Verifique seu e-mail para confirmar a conta.';
+        if (data.session) setTimeout(() => { document.getElementById('authDialog')?.close(); updateSessionUI(); }, 500);
       } else {
-        const emailValue = document.getElementById('email').value.trim().toLowerCase();
+        const input = getEmailInput();
+        const emailValue = input?.value.trim().toLowerCase();
         if (!emailValue) throw new Error('Informe seu e-mail.');
         const { error } = await client.auth.signInWithPassword({ email: emailValue, password });
         if (error) throw error;
-        if (document.getElementById('authDialog')) document.getElementById('authDialog').close();
+        document.getElementById('authDialog')?.close();
         await updateSessionUI();
       }
     } catch (error) {
-      console.error(error);
+      console.error('BL Auth:', error);
       message.textContent = error?.message || 'Não foi possível concluir a operação.';
-    } finally {
-      submit.disabled = false;
-    }
+    } finally { submit.disabled = false; }
   });
 }
 
@@ -116,28 +101,21 @@ async function updateSessionUI() {
     }
   } catch (error) { console.error('Supabase Auth:', error); }
 }
-
 async function loadBoloes() {
-  const list = document.getElementById('boloesList');
-  if (!list) return;
+  const list = document.getElementById('boloesList'); if (!list) return;
   try {
     const { data, error } = await getSupabase().from('boloes').select('id,nome,descricao,concurso,data_sorteio,valor_jogo').eq('status', 'ativo').order('data_sorteio');
-    if (error) throw error;
-    if (!data?.length) return;
+    if (error) throw error; if (!data?.length) return;
     list.innerHTML = data.map(b => `<article class="card"><h3>${escapeHtml(b.nome)}</h3><p>${escapeHtml(b.descricao || 'Escolha suas 10 dezenas para participar.')}</p><p><strong>Concurso:</strong> ${b.concurso}<br><strong>Sorteio:</strong> ${new Date(`${b.data_sorteio}T00:00:00`).toLocaleDateString('pt-BR')}<br><strong>Jogo:</strong> R$ ${Number(b.valor_jogo).toFixed(2).replace('.', ',')}</p><button class="btn" onclick="startGame('${b.id}')">Escolher dezenas</button></article>`).join('');
   } catch (error) { console.error('Erro ao carregar bolões:', error); }
 }
-
 function startGame(id) { window.location.href = `jogar.html?bolao=${encodeURIComponent(id)}`; }
-function escapeHtml(value) { return String(value ?? '').replace(/[&<>\'\"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c])); }
-window.startGame = startGame;
-window.openAuth = openAuth;
-
+function escapeHtml(value) { return String(value ?? '').replace(/[&<>\'\"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;' }[c])); }
+window.startGame = startGame; window.openAuth = openAuth;
 function init() {
-  bindEvents();
-  updateSessionUI();
-  loadBoloes();
+  if (location.pathname.endsWith('/cadastro.html')) registerMode = true;
+  if (location.pathname.endsWith('/login.html')) registerMode = false;
+  bindEvents(); updateSessionUI(); loadBoloes();
   try { getSupabase().auth.onAuthStateChange(() => updateSessionUI()); } catch (error) { console.error(error); }
 }
-
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
