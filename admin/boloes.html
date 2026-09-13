@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bolões — Painel Master</title><link rel="stylesheet" href="../css/style.css"></head>
+<body>
+<header class="topbar"><a class="brand" href="./">BL MASTER</a><div class="session-area"><a class="btn btn-outline" href="./">Voltar</a></div></header>
+<main class="section">
+  <div class="section-heading"><div><span class="eyebrow">Gerenciamento</span><h1>Bolões</h1></div></div>
+  <div id="bolaoMessage" class="message"></div>
+
+  <section class="section-block">
+    <div class="section-heading"><div><span class="eyebrow">Novo</span><h2>Criar bolão</h2></div></div>
+    <form id="bolaoForm" class="form-grid">
+      <label>Nome<input id="nome" required maxlength="120" placeholder="Ex.: Bolão Especial"></label>
+      <label>Concurso<input id="concurso" type="number" min="1" required></label>
+      <label>Data do sorteio<input id="dataSorteio" type="date" required></label>
+      <label>Preço por jogo (R$)<input id="valorJogo" type="number" min="0.01" step="0.01" value="10.00" required></label>
+      <label>Prêmio (R$)<input id="premio" type="number" min="0" step="0.01" value="10000.00" required></label>
+      <label>Dezenas por jogo<input id="quantidadeDezenas" type="number" min="1" max="60" value="10" required></label>
+      <label class="full">Descrição<textarea id="descricao" rows="3" placeholder="Informações do bolão"></textarea></label>
+      <div class="full"><button class="btn btn-primary" type="submit">Criar bolão</button></div>
+    </form>
+  </section>
+
+  <section class="section-block">
+    <div class="section-heading"><div><span class="eyebrow">Controle</span><h2>Bolões cadastrados</h2></div></div>
+    <div id="boloesList" class="admin-table-wrap"><div class="empty">Carregando...</div></div>
+  </section>
+</main>
+<script type="module" src="../js/admin-boloes.js"></script>
+</body></html>
