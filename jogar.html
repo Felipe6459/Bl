@@ -3,15 +3,30 @@
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Escolher dezenas — BL</title><link rel="stylesheet" href="css/style.css"></head>
 <body>
 <header class="topbar"><a class="brand" href="./">BL</a><a class="btn btn-outline" href="minha-conta.html">Minha conta</a></header>
-<main class="section">
-  <span class="eyebrow">Seu jogo</span>
-  <h1 id="title">Carregando bolão...</h1>
-  <p id="description">Carregando configuração...</p>
-  <div id="numbers" style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:24px 0"></div>
-  <div class="card">
-    <strong id="counter">0/— selecionadas</strong>
-    <p id="selected">—</p>
-    <button id="continue" class="btn btn-large" disabled>Continuar</button>
+<main class="section game-page">
+  <div class="game-head">
+    <span class="eyebrow">Seu jogo</span>
+    <h1 id="title">Carregando bolão...</h1>
+    <p id="description">Carregando configuração...</p>
+  </div>
+
+  <section class="number-picker">
+    <div class="picker-top">
+      <div>
+        <h2 class="picker-title">Escolha suas dezenas</h2>
+        <p class="picker-help">Toque nos números para selecionar. Você precisa escolher exatamente a quantidade indicada.</p>
+      </div>
+      <div id="counter" class="selection-badge">0/—</div>
+    </div>
+    <div id="numbers" class="number-grid"></div>
+    <div class="selected-area">
+      <span>Dezenas escolhidas</span>
+      <div id="selected" class="selected-numbers">—</div>
+    </div>
+  </section>
+
+  <div class="card game-actions">
+    <button id="continue" class="btn btn-large" disabled>Continuar para pagamento</button>
     <p id="msg" class="message"></p>
     <div id="payment" style="display:none;margin-top:20px"></div>
   </div>
@@ -35,18 +50,16 @@ function renderNumbers(){
   for(let n=1;n<=60;n++){
     const b=document.createElement('button');
     b.textContent=String(n).padStart(2,'0');
-    b.className='btn btn-outline';
-    b.style.padding='12px 4px';
+    b.className='number-ball';
     b.type='button';
+    b.setAttribute('aria-label',`Dezena ${String(n).padStart(2,'0')}`);
     b.onclick=()=>{
       if(set.has(n)){
         set.delete(n);
-        b.style.background='transparent';
-        b.style.color='';
+        b.classList.remove('selected');
       }else if(set.size<quantidade){
         set.add(n);
-        b.style.background='#fff';
-        b.style.color='#111';
+        b.classList.add('selected');
       }
       update();
     };
@@ -56,8 +69,9 @@ function renderNumbers(){
 
 function update(){
   const arr=[...set].sort((a,b)=>a-b);
-  counter.textContent=`${arr.length}/${quantidade} selecionadas`;
-  selected.textContent=arr.length?arr.map(n=>String(n).padStart(2,'0')).join(' · '):'—';
+  counter.textContent=`${arr.length}/${quantidade}`;
+  counter.classList.toggle('complete',arr.length===quantidade);
+  selected.innerHTML=arr.length?arr.map(n=>`<span>${String(n).padStart(2,'0')}</span>`).join(''):'<em>Nenhuma dezena selecionada</em>';
   continueBtn.disabled=arr.length!==quantidade;
 }
 
