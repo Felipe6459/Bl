@@ -13,6 +13,7 @@
     <p id="selected">—</p>
     <button id="continue" class="btn btn-large" disabled>Continuar</button>
     <p id="msg" class="message"></p>
+    <div id="payment" style="display:none;margin-top:20px"></div>
   </div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -25,6 +26,7 @@ const counter=document.getElementById('counter');
 const selected=document.getElementById('selected');
 const continueBtn=document.getElementById('continue');
 const msg=document.getElementById('msg');
+const paymentBox=document.getElementById('payment');
 let quantidade=0;
 let bolao=null;
 
@@ -59,6 +61,48 @@ function update(){
   continueBtn.disabled=arr.length!==quantidade;
 }
 
+function escapeHtml(value){
+  return String(value ?? '').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));
+}
+
+function showPayment(data){
+  const pix=data?.pix || {};
+  const encoded=String(pix.encodedImage || '').trim();
+  const payload=String(pix.payload || '').trim();
+  paymentBox.style.display='block';
+  paymentBox.innerHTML=`
+    <div class="card" style="text-align:center">
+      <h2>💳 Pagamento via Pix</h2>
+      <p>Valor: <strong>R$ ${Number(data.value||0).toFixed(2).replace('.',',')}</strong></p>
+      ${encoded ? `<img src="data:image/png;base64,${encoded}" alt="QR Code Pix" style="width:min(280px,100%);height:auto;margin:10px auto;display:block">` : '<p>QR Code não retornado pelo Asaas.</p>'}
+      ${payload ? `<p style="word-break:break-all;text-align:left;font-size:13px">${escapeHtml(payload)}</p><button type="button" class="btn btn-large" id="copyPix">📋 Copiar Pix</button>` : ''}
+      ${data.invoice_url ? `<p><a class="btn btn-outline" href="${escapeHtml(data.invoice_url)}" target="_blank" rel="noopener">Abrir cobrança</a></p>` : ''}
+      <p id="pixStatus" class="message"></p>
+    </div>`;
+  const copy=document.getElementById('copyPix');
+  if(copy && payload){
+    copy.onclick=async()=>{
+      try{
+        await navigator.clipboard.writeText(payload);
+        document.getElementById('pixStatus').textContent='Pix copiado. Agora é só pagar no aplicativo do seu banco.';
+      }catch(e){
+        document.getElementById('pixStatus').textContent='Não foi possível copiar automaticamente. Selecione o código Pix acima e copie manualmente.';
+      }
+    };
+  }
+}
+
+async function getFunctionError(error,data){
+  if(data?.error) return data.error;
+  try{
+    if(error?.context && typeof error.context.json==='function'){
+      const body=await error.context.json();
+      if(body?.error) return body.error;
+    }
+  }catch(e){}
+  return error?.message || 'Não foi possível gerar o pagamento Pix.';
+}
+
 (async()=>{
   if(!id){msg.textContent='Bolão não informado.';return;}
   const {data,error}=await sb.from('boloes').select('id,nome,concurso,valor_jogo,descricao,quantidade_dezenas,premio').eq('id',id).eq('status','ativo').single();
@@ -78,15 +122,33 @@ continueBtn.onclick=async()=>{
   if(!user){location.href='./?login=1';return;}
   continueBtn.disabled=true;
   msg.textContent='Criando seu pedido...';
+  paymentBox.style.display='none';
   const dezenas=[...set].sort((a,b)=>a-b);
-  const {data,error}=await sb.functions.invoke('criar-pedido',{body:{bolao_id:id,jogos:[dezenas]}});
-  if(error||!data?.ok){
-    msg.textContent=data?.error||error?.message||'Não foi possível criar o pedido.';
+  const {data:pedidoData,error:pedidoError}=await sb.functions.invoke('criar-pedido',{body:{bolao_id:id,jogos:[dezenas]}});
+  if(pedidoError||!pedidoData?.ok){
+    msg.textContent=await getFunctionError(pedidoError,pedidoData);
     continueBtn.disabled=false;
     return;
   }
-  msg.textContent=`Jogo criado com sucesso. Pedido ${data.pedido.id.slice(0,8)}. A próxima etapa será o pagamento.`;
-  continueBtn.textContent='Pedido criado';
+  const pedidoId=pedidoData.pedido?.id;
+  if(!pedidoId){
+    msg.textContent='Pedido criado, mas o identificador do pedido não foi retornado.';
+    continueBtn.disabled=false;
+    return;
+  }
+  msg.textContent=`Pedido ${pedidoId.slice(0,8)} criado. Gerando Pix...`;
+
+  const {data:paymentData,error:paymentError}=await sb.functions.invoke('criar-pagamento',{body:{pedido_id:pedidoId}});
+  if(paymentError||!paymentData?.ok){
+    msg.textContent=await getFunctionError(paymentError,paymentData);
+    continueBtn.disabled=false;
+    continueBtn.textContent='Tentar pagamento novamente';
+    return;
+  }
+
+  msg.textContent='Pagamento Pix gerado com sucesso.';
+  continueBtn.textContent='Pagamento gerado';
+  showPayment(paymentData);
 };
 </script>
 </body></html>
