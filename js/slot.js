@@ -13,6 +13,7 @@ const lineCountEl=document.getElementById('lineCount');
 const maxPrizeEl=document.getElementById('maxPrize');
 const spinBtn=document.getElementById('spinBtn');
 const resultEl=document.getElementById('result');
+const paylinesEl=document.getElementById('paylines');
 let lines=1;
 let spinning=false;
 
@@ -25,6 +26,28 @@ for(let i=1;i<=15;i++){
   reelsEl.appendChild(d);
 }
 
+// 12 linhas clássicas em uma matriz 5x3. As linhas ficam visíveis conforme a quantidade selecionada.
+const linePatterns = [
+  [1,1,1,1,1], [2,2,2,2,2], [3,3,3,3,3],
+  [1,2,3,2,1], [3,2,1,2,3], [1,1,2,1,1],
+  [3,3,2,3,3], [2,1,1,1,2], [2,3,3,3,2],
+  [1,2,2,2,1], [3,2,2,2,3], [1,3,2,3,1]
+];
+
+function drawPaylines(){
+  if(!paylinesEl)return;
+  paylinesEl.innerHTML='';
+  linePatterns.forEach((pattern,index)=>{
+    const points=pattern.map((row,col)=>`${col*25+12.5},${(row-1)*50+25}`).join(' ');
+    const p=document.createElementNS('http://www.w3.org/2000/svg','polyline');
+    p.setAttribute('points',points);
+    p.setAttribute('class','payline'+(index<lines?' active':''));
+    paylinesEl.appendChild(p);
+  });
+}
+
+drawPaylines();
+
 for(let i=1;i<=12;i++){
   const b=document.createElement('button');
   b.type='button';
@@ -36,6 +59,7 @@ for(let i=1;i<=12;i++){
     document.querySelectorAll('.line-btn').forEach(x=>x.classList.remove('active'));
     b.classList.add('active');
     updatePrize();
+    drawPaylines();
   });
   lineButtons.appendChild(b);
 }
@@ -78,17 +102,14 @@ async function spin(){
   resultEl.className='result';
   resultEl.textContent='Os 15 quadros estão girando...';
   document.querySelectorAll('.reel').forEach(r=>r.classList.add('spinning'));
-
   const start=Date.now();
   while(Date.now()-start<1050){
     render(Array.from({length:15},randSymbol));
     await new Promise(r=>setTimeout(r,90));
   }
-
   const values=Array.from({length:15},randSymbol);
   render(values);
   document.querySelectorAll('.reel').forEach(r=>r.classList.remove('spinning','win'));
-
   const outcome=evaluate(values);
   if(outcome.prize>0){
     document.querySelectorAll('.reel').forEach(r=>r.classList.add('win'));
