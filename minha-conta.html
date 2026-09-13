@@ -1,12 +1,63 @@
 <!doctype html>
 <html lang="pt-BR">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Minha conta — BL</title><link rel="stylesheet" href="css/style.css"></head>
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Minha conta — BL</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
 <body>
-<header class="topbar"><a class="brand" href="./">BL</a><button class="btn btn-outline" id="logout">Sair</button></header>
-<main class="section"><span class="eyebrow">Área do cliente</span><h1>Meus jogos</h1><div id="profile" class="card">Carregando...</div><div id="games" class="cards" style="margin-top:16px"></div></main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
+<header class="topbar">
+  <a class="brand" href="./">BL</a>
+  <div class="session-area">
+    <a class="btn btn-primary" href="./">🎟️ Fazer novo jogo</a>
+    <button class="btn btn-outline" id="logout">Sair</button>
+  </div>
+</header>
+<main class="section">
+  <span class="eyebrow">Área do cliente</span>
+  <div class="section-heading">
+    <div><h1>Meus jogos</h1><p>Escolha um bolão para fazer um novo jogo.</p></div>
+  </div>
+  <div id="profile" class="card">Carregando...</div>
+
+  <section class="section-block" style="margin-top:20px">
+    <div class="section-heading">
+      <div><span class="eyebrow">Novo jogo</span><h2>Bolões disponíveis</h2></div>
+    </div>
+    <div id="boloes" class="cards"><div class="empty">Carregando bolões...</div></div>
+  </section>
+
+  <section class="section-block" style="margin-top:20px">
+    <div class="section-heading">
+      <div><span class="eyebrow">Histórico</span><h2>Jogos feitos</h2></div>
+    </div>
+    <div id="games" class="cards"><div class="empty">Carregando...</div></div>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
 const sb=window.supabase.createClient('https://ujddnzckfrksetsfgden.supabase.co','sb_publishable_Lo9uaX-E9hHcL-w2El6M3g_OoCRma3W');
-const esc=v=>String(v).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
-(async()=>{const {data:{user}}=await sb.auth.getUser();if(!user){location.href='./';return;}const {data:p}=await sb.from('profiles').select('full_name,cpf,phone').eq('id',user.id).single();document.getElementById('profile').innerHTML=`<strong>${esc(p?.full_name||'Cliente')}</strong><p>Telefone: ${esc(p?.phone||'')}<br>CPF: ${esc(p?.cpf||'')}</p>`;const {data:g}=await sb.from('jogos').select('id,numero,dezenas,created_at,status:pedido_id,bolao_id').eq('comprador_id',user.id).order('created_at',{ascending:false});const box=document.getElementById('games');if(!g?.length){box.innerHTML='<div class="empty">Você ainda não possui jogos confirmados.</div>';return;}box.innerHTML=g.map(j=>`<article class="card"><h3>Jogo #${j.numero}</h3><p>${j.dezenas.map(n=>String(n).padStart(2,'0')).join(' · ')}</p><small>Registrado em ${new Date(j.created_at).toLocaleString('pt-BR')}</small></article>`).join('');})();
+const esc=v=>String(v??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
+const money=v=>`R$ ${Number(v||0).toFixed(2).replace('.',',')}`;
+(async()=>{
+  const {data:{user}}=await sb.auth.getUser();
+  if(!user){location.href='./';return;}
+
+  const {data:p}=await sb.from('profiles').select('full_name,cpf,phone').eq('id',user.id).single();
+  document.getElementById('profile').innerHTML=`<strong>${esc(p?.full_name||'Cliente')}</strong><p>Telefone: ${esc(p?.phone||'')}<br>CPF: ${esc(p?.cpf||'')}</p>`;
+
+  const {data:boloes,error:be}=await sb.from('boloes').select('id,nome,descricao,concurso,data_sorteio,valor_jogo,quantidade_dezenas,premio,status').eq('status','ativo').order('data_sorteio',{ascending:true});
+  const bbox=document.getElementById('boloes');
+  if(be){bbox.innerHTML=`<div class="empty">Não foi possível carregar os bolões.</div>`;}
+  else if(!boloes?.length){bbox.innerHTML='<div class="empty">Nenhum bolão ativo no momento.</div>';} 
+  else {bbox.innerHTML=boloes.map(b=>`<article class="card"><span class="eyebrow">Concurso ${esc(b.concurso)}</span><h3>${esc(b.nome)}</h3><p>${esc(b.descricao||'Escolha suas dezenas para participar.')}</p><p><strong>${money(b.valor_jogo)}</strong> por jogo<br>${Number(b.quantidade_dezenas)} dezenas · Prêmio: ${money(b.premio)}<br>Sorteio: ${new Date(b.data_sorteio+'T12:00:00').toLocaleDateString('pt-BR')}</p><a class="btn btn-large" href="./jogar.html?bolao=${encodeURIComponent(b.id)}">🎯 Fazer este jogo</a></article>`).join('');}
+
+  const {data:g}=await sb.from('jogos').select('id,numero,dezenas,created_at,bolao_id,pedido_id').eq('comprador_id',user.id).order('created_at',{ascending:false});
+  const box=document.getElementById('games');
+  if(!g?.length){box.innerHTML='<div class="empty">Você ainda não possui jogos.</div>';return;}
+  box.innerHTML=g.map(j=>`<article class="card"><h3>Jogo #${j.numero}</h3><p>${j.dezenas.map(n=>String(n).padStart(2,'0')).join(' · ')}</p><small>Registrado em ${new Date(j.created_at).toLocaleString('pt-BR')}</small></article>`).join('');
+})();
 document.getElementById('logout').onclick=async()=>{await sb.auth.signOut();location.href='./';};
-</script></body></html>
+</script>
+</body>
+</html>
