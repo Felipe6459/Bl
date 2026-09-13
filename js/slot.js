@@ -17,7 +17,6 @@ const paylinesEl=document.getElementById('paylines');
 let lines=1;
 let spinning=false;
 
-// 15 quadros: 5 colunas x 3 fileiras.
 for(let i=1;i<=15;i++){
   const d=document.createElement('div');
   d.className='reel';
@@ -26,7 +25,6 @@ for(let i=1;i<=15;i++){
   reelsEl.appendChild(d);
 }
 
-// 12 linhas clássicas em uma matriz 5x3. As linhas ficam visíveis conforme a quantidade selecionada.
 const linePatterns = [
   [1,1,1,1,1], [2,2,2,2,2], [3,3,3,3,3],
   [1,2,3,2,1], [3,2,1,2,3], [1,1,2,1,1],
@@ -34,14 +32,14 @@ const linePatterns = [
   [1,2,2,2,1], [3,2,2,2,3], [1,3,2,3,1]
 ];
 
-function drawPaylines(){
+function drawPaylines(winningIndexes=[]){
   if(!paylinesEl)return;
   paylinesEl.innerHTML='';
   linePatterns.forEach((pattern,index)=>{
     const points=pattern.map((row,col)=>`${col*25+12.5},${(row-1)*50+25}`).join(' ');
     const p=document.createElementNS('http://www.w3.org/2000/svg','polyline');
     p.setAttribute('points',points);
-    p.setAttribute('class','payline'+(index<lines?' active':''));
+    p.setAttribute('class','payline'+(index<lines?' active':'')+(winningIndexes.includes(index)?' winning':'') );
     paylinesEl.appendChild(p);
   });
 }
@@ -60,6 +58,8 @@ for(let i=1;i<=12;i++){
     b.classList.add('active');
     updatePrize();
     drawPaylines();
+    resultEl.className='result';
+    resultEl.textContent=`${lines} ${lines===1?'linha':'linhas'} de pagamento ativa${lines===1?'':'s'}.`;
   });
   lineButtons.appendChild(b);
 }
@@ -79,20 +79,26 @@ function render(values){
   });
 }
 
+function lineIndexesFor(values){
+  const wins=[];
+  linePatterns.slice(0,lines).forEach((pattern,index)=>{
+    const first=values[pattern[0]-1];
+    let same=true;
+    for(let col=1;col<5;col++){
+      const symbol=values[col*3+(pattern[col]-1)];
+      if(symbol.name!==first.name){same=false;break;}
+    }
+    if(same)wins.push(index);
+  });
+  return wins;
+}
+
 function evaluate(values){
-  let prize=0,winName='';
-  const counts={};
-  values.forEach(s=>counts[s.name]=(counts[s.name]||0)+1);
-  const best=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
-  if(best[1]>=5){
-    const s=symbols.find(x=>x.name===best[0]);
-    prize=Math.round(s.value/lines);
-    winName='5 '+best[0]+'s';
-  }else if(best[1]>=3){
-    prize=Math.max(5,Math.round(25/lines));
-    winName='3 símbolos iguais';
-  }
-  return {prize,winName};
+  const wins=lineIndexesFor(values);
+  if(!wins.length)return {prize:0,winName:'',wins:[]};
+  const pattern= linePatterns[wins[0]];
+  const first=values[pattern[0]-1];
+  return {prize:Math.max(5,Math.round(first.value/lines)),winName:`Linha ${wins[0]+1} — 5 ${first.name}s`,wins};
 }
 
 async function spin(){
@@ -101,21 +107,34 @@ async function spin(){
   spinBtn.disabled=true;
   resultEl.className='result';
   resultEl.textContent='Os 15 quadros estão girando...';
+  drawPaylines();
+  document.querySelectorAll('.reel').forEach(r=>r.classList.remove('win'));
   document.querySelectorAll('.reel').forEach(r=>r.classList.add('spinning'));
+
+  // Giro mais longo: 2,5 segundos.
   const start=Date.now();
-  while(Date.now()-start<1050){
+  while(Date.now()-start<2500){
     render(Array.from({length:15},randSymbol));
-    await new Promise(r=>setTimeout(r,90));
+    await new Promise(r=>setTimeout(r,100));
   }
+
   const values=Array.from({length:15},randSymbol);
   render(values);
   document.querySelectorAll('.reel').forEach(r=>r.classList.remove('spinning','win'));
+
   const outcome=evaluate(values);
   if(outcome.prize>0){
-    document.querySelectorAll('.reel').forEach(r=>r.classList.add('win'));
+    outcome.wins.forEach(index=>{
+      linePatterns[index].forEach((row,col)=>{
+        const reel=document.getElementById('reel'+(col*3+row));
+        if(reel)reel.classList.add('win');
+      });
+    });
+    drawPaylines(outcome.wins);
     resultEl.className='result win-text';
-    resultEl.textContent='✨ '+outcome.winName+' — você ganhou '+outcome.prize.toLocaleString('pt-BR')+' pontos!';
+    resultEl.textContent='✨ '+outcome.winName+' — '+outcome.prize.toLocaleString('pt-BR')+' pontos!';
   }else{
+    drawPaylines();
     resultEl.textContent='Não houve combinação vencedora. Tente novamente.';
   }
   spinBtn.disabled=false;
