@@ -17,6 +17,112 @@ const paylinesEl=document.getElementById('paylines');
 let lines=1;
 let spinning=false;
 
+/* Áudio: gerado pelo Web Audio API, sem precisar carregar arquivos externos. */
+let audioCtx=null;
+let masterGain=null;
+let soundEnabled=true;
+let spinOsc=null;
+let spinGain=null;
+let spinNoise=null;
+let spinNoiseGain=null;
+
+function initAudio(){
+  if(!soundEnabled)return;
+  const AudioContext=window.AudioContext||window.webkitAudioContext;
+  if(!AudioContext)return;
+  if(!audioCtx){
+    audioCtx=new AudioContext();
+    masterGain=audioCtx.createGain();
+    masterGain.gain.value=0.16;
+    masterGain.connect(audioCtx.destination);
+  }
+  if(audioCtx.state==='suspended')audioCtx.resume();
+}
+
+function tone(freq,duration=0.08,type='square',volume=0.08,delay=0){
+  if(!soundEnabled)return;
+  initAudio();
+  if(!audioCtx)return;
+  const now=audioCtx.currentTime+delay;
+  const osc=audioCtx.createOscillator();
+  const gain=audioCtx.createGain();
+  osc.type=type;
+  osc.frequency.setValueAtTime(freq,now);
+  gain.gain.setValueAtTime(0.0001,now);
+  gain.gain.exponentialRampToValueAtTime(volume,now+0.008);
+  gain.gain.exponentialRampToValueAtTime(0.0001,now+duration);
+  osc.connect(gain);
+  gain.connect(masterGain);
+  osc.start(now);
+  osc.stop(now+duration+0.02);
+}
+
+function startSpinSound(){
+  if(!soundEnabled)return;
+  initAudio();
+  if(!audioCtx)return;
+  stopSpinSound();
+
+  spinOsc=audioCtx.createOscillator();
+  spinGain=audioCtx.createGain();
+  spinOsc.type='sawtooth';
+  spinOsc.frequency.value=95;
+  spinGain.gain.value=0.025;
+  spinOsc.connect(spinGain);
+  spinGain.connect(masterGain);
+  spinOsc.start();
+
+  const bufferSize=audioCtx.sampleRate*0.25;
+  const buffer=audioCtx.createBuffer(1,bufferSize,audioCtx.sampleRate);
+  const data=buffer.getChannelData(0);
+  for(let i=0;i<bufferSize;i++)data[i]=(Math.random()*2-1)*0.35;
+  spinNoise=audioCtx.createBufferSource();
+  spinNoise.buffer=buffer;
+  spinNoise.loop=true;
+  spinNoiseGain=audioCtx.createGain();
+  spinNoiseGain.gain.value=0.018;
+  spinNoise.connect(spinNoiseGain);
+  spinNoiseGain.connect(masterGain);
+  spinNoise.start();
+}
+
+function stopSpinSound(){
+  try{if(spinOsc)spinOsc.stop();}catch(e){}
+  try{if(spinNoise)spinNoise.stop();}catch(e){}
+  spinOsc=null;
+  spinNoise=null;
+}
+
+function playReelStops(){
+  [150,185,220,255,290].forEach((f,i)=>tone(f,0.055,'square',0.06,i*0.12));
+}
+
+function playWinSound(){
+  [523,659,784,1047,1319].forEach((f,i)=>tone(f,0.18,'sine',0.09,i*0.09));
+  tone(1568,0.35,'sine',0.1,0.5);
+}
+
+function playNoWinSound(){
+  tone(180,0.12,'triangle',0.045);
+}
+
+function addSoundControl(){
+  if(!spinBtn||document.getElementById('soundToggle'))return;
+  const b=document.createElement('button');
+  b.type='button';
+  b.id='soundToggle';
+  b.className='line-btn';
+  b.style.marginTop='8px';
+  b.textContent='🔊 Som ligado';
+  b.addEventListener('click',()=>{
+    soundEnabled=!soundEnabled;
+    b.textContent=soundEnabled?'🔊 Som ligado':'🔇 Som desligado';
+    if(soundEnabled)initAudio();
+    else stopSpinSound();
+  });
+  spinBtn.parentElement?.appendChild(b);
+}
+
 for(let i=1;i<=15;i++){
   const d=document.createElement('div');
   d.className='reel';
@@ -110,8 +216,32 @@ function lineIndexesFor(values){
   return wins;
 }
 
+/*
+ * O modo atual é uma demonstração. A lógica original era extremamente rara:
+ * com 7 símbolos igualmente prováveis, uma linha específica precisava acertar
+ * 5 iguais. Para deixar a demonstração realmente jogável, adicionamos uma
+ * chance controlada de vitória quando nenhuma combinação natural apareceu.
+ * Com 12 linhas a chance de uma vitória forçada é maior, como esperado.
+ */
+function createDemoWin(values){
+  const demoWinChance=0.04+(lines-1)*0.012;
+  if(Math.random()>demoWinChance)return false;
+
+  const index=Math.floor(Math.random()*lines);
+  const pattern=linePatterns[index];
+  const symbol=randSymbol();
+  pattern.forEach((row,col)=>{
+    values[col*3+(row-1)]=symbol;
+  });
+  return true;
+}
+
 function evaluate(values){
-  const wins=lineIndexesFor(values);
+  let wins=lineIndexesFor(values);
+  if(!wins.length){
+    createDemoWin(values);
+    wins=lineIndexesFor(values);
+  }
   if(!wins.length)return {prize:0,winName:'',wins:[]};
   const pattern=linePatterns[wins[0]];
   const first=values[pattern[0]-1];
@@ -128,6 +258,10 @@ async function spin(){
   document.querySelectorAll('.reel').forEach(r=>r.classList.remove('win'));
   document.querySelectorAll('.reel').forEach(r=>r.classList.add('spinning'));
 
+  initAudio();
+  startSpinSound();
+  tone(90,0.08,'square',0.07);
+
   const start=Date.now();
   while(Date.now()-start<2500){
     render(Array.from({length:15},randSymbol));
@@ -135,10 +269,12 @@ async function spin(){
   }
 
   const values=Array.from({length:15},randSymbol);
+  const outcome=evaluate(values);
   render(values);
+  stopSpinSound();
+  playReelStops();
   document.querySelectorAll('.reel').forEach(r=>r.classList.remove('spinning','win'));
 
-  const outcome=evaluate(values);
   if(outcome.prize>0){
     outcome.wins.forEach(index=>{
       linePatterns[index].forEach((row,col)=>{
@@ -149,13 +285,16 @@ async function spin(){
     drawPaylines(outcome.wins);
     resultEl.className='result win-text';
     resultEl.textContent='✨ '+outcome.winName+' — '+outcome.prize.toLocaleString('pt-BR')+' pontos!';
+    playWinSound();
   }else{
     paylinesEl.classList.add('hidden');
     resultEl.textContent='Não houve combinação vencedora. Tente novamente.';
+    playNoWinSound();
   }
   spinBtn.disabled=false;
   spinning=false;
 }
 
 spinBtn.addEventListener('click',spin);
+addSoundControl();
 updatePrize();
