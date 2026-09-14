@@ -17,7 +17,6 @@ const paylinesEl=document.getElementById('paylines');
 let lines=1;
 let spinning=false;
 
-/* Áudio: gerado pelo Web Audio API, sem precisar carregar arquivos externos. */
 let audioCtx=null;
 let masterGain=null;
 let soundEnabled=true;
@@ -25,6 +24,7 @@ let spinOsc=null;
 let spinGain=null;
 let spinNoise=null;
 let spinNoiseGain=null;
+let tickTimer=null;
 
 function initAudio(){
   if(!soundEnabled)return;
@@ -63,30 +63,37 @@ function startSpinSound(){
   if(!audioCtx)return;
   stopSpinSound();
 
+  // Som contínuo de máquina girando + pequenos cliques rápidos.
   spinOsc=audioCtx.createOscillator();
   spinGain=audioCtx.createGain();
   spinOsc.type='sawtooth';
-  spinOsc.frequency.value=95;
-  spinGain.gain.value=0.025;
+  spinOsc.frequency.value=115;
+  spinGain.gain.value=0.035;
   spinOsc.connect(spinGain);
   spinGain.connect(masterGain);
   spinOsc.start();
 
-  const bufferSize=audioCtx.sampleRate*0.25;
+  const bufferSize=Math.floor(audioCtx.sampleRate*0.18);
   const buffer=audioCtx.createBuffer(1,bufferSize,audioCtx.sampleRate);
   const data=buffer.getChannelData(0);
-  for(let i=0;i<bufferSize;i++)data[i]=(Math.random()*2-1)*0.35;
+  for(let i=0;i<bufferSize;i++)data[i]=(Math.random()*2-1)*0.45;
   spinNoise=audioCtx.createBufferSource();
   spinNoise.buffer=buffer;
   spinNoise.loop=true;
   spinNoiseGain=audioCtx.createGain();
-  spinNoiseGain.gain.value=0.018;
+  spinNoiseGain.gain.value=0.025;
   spinNoise.connect(spinNoiseGain);
   spinNoiseGain.connect(masterGain);
   spinNoise.start();
+
+  // Cliques enquanto os rolos estão passando pelos símbolos.
+  tickTimer=setInterval(()=>{
+    if(spinning)tone(520+Math.random()*180,0.035,'square',0.035);
+  },125);
 }
 
 function stopSpinSound(){
+  if(tickTimer){clearInterval(tickTimer);tickTimer=null;}
   try{if(spinOsc)spinOsc.stop();}catch(e){}
   try{if(spinNoise)spinNoise.stop();}catch(e){}
   spinOsc=null;
@@ -102,9 +109,7 @@ function playWinSound(){
   tone(1568,0.35,'sine',0.1,0.5);
 }
 
-function playNoWinSound(){
-  tone(180,0.12,'triangle',0.045);
-}
+function playNoWinSound(){tone(180,0.12,'triangle',0.045);}
 
 function addSoundControl(){
   if(!spinBtn||document.getElementById('soundToggle'))return;
@@ -155,15 +160,12 @@ function drawPaylines(winningIndexes=[]){
     const points=pattern.map((row,col)=>`${col*25+12.5},${(row-1)*50+25}`).join(' ');
     const p=svgEl('polyline',{points,class:'payline'+(active?' active':'')+(winning?' winning':'')});
     paylinesEl.appendChild(p);
-    if(active||winning){
-      const startRow=pattern[0];
-      const endRow=pattern[4];
-      const start=svgEl('circle',{cx:'5',cy:String((startRow-1)*50+25),r:'3.2',fill:winning?'#fff':'#6d28d9',stroke:'#f5c451','stroke-width':'0.8'});
-      const end=svgEl('circle',{cx:'95',cy:String((endRow-1)*50+25),r:'3.2',fill:winning?'#fff':'#6d28d9',stroke:'#f5c451','stroke-width':'0.8'});
-      const t1=svgEl('text',{x:'5',y:String((startRow-1)*50+25),class:'payline-label'});t1.textContent=String(index+1);
-      const t2=svgEl('text',{x:'95',y:String((endRow-1)*50+25),class:'payline-label'});t2.textContent=String(index+1);
-      paylinesEl.append(start,end,t1,t2);
-    }
+    const startRow=pattern[0],endRow=pattern[4];
+    const start=svgEl('circle',{cx:'5',cy:String((startRow-1)*50+25),r:'3.2',fill:winning?'#fff':'#6d28d9',stroke:'#f5c451','stroke-width':'0.8'});
+    const end=svgEl('circle',{cx:'95',cy:String((endRow-1)*50+25),r:'3.2',fill:winning?'#fff':'#6d28d9',stroke:'#f5c451','stroke-width':'0.8'});
+    const t1=svgEl('text',{x:'5',y:String((startRow-1)*50+25),class:'payline-label'});t1.textContent=String(index+1);
+    const t2=svgEl('text',{x:'95',y:String((endRow-1)*50+25),class:'payline-label'});t2.textContent=String(index+1);
+    paylinesEl.append(start,end,t1,t2);
   });
 }
 
@@ -216,23 +218,13 @@ function lineIndexesFor(values){
   return wins;
 }
 
-/*
- * O modo atual é uma demonstração. A lógica original era extremamente rara:
- * com 7 símbolos igualmente prováveis, uma linha específica precisava acertar
- * 5 iguais. Para deixar a demonstração realmente jogável, adicionamos uma
- * chance controlada de vitória quando nenhuma combinação natural apareceu.
- * Com 12 linhas a chance de uma vitória forçada é maior, como esperado.
- */
 function createDemoWin(values){
   const demoWinChance=0.04+(lines-1)*0.012;
   if(Math.random()>demoWinChance)return false;
-
   const index=Math.floor(Math.random()*lines);
   const pattern=linePatterns[index];
   const symbol=randSymbol();
-  pattern.forEach((row,col)=>{
-    values[col*3+(row-1)]=symbol;
-  });
+  pattern.forEach((row,col)=>{values[col*3+(row-1)]=symbol;});
   return true;
 }
 
@@ -260,7 +252,7 @@ async function spin(){
 
   initAudio();
   startSpinSound();
-  tone(90,0.08,'square',0.07);
+  tone(90,0.1,'square',0.07);
 
   const start=Date.now();
   while(Date.now()-start<2500){
